@@ -1,0 +1,111 @@
+global class SVC_CustomerSoap {
+    static Map<String, Api_MetaData__mdt> apiConfig = Api_MetaData__mdt.getAll();
+
+    
+    /**
+     * @description customerSearch  SOAP Webservice method
+     * @param  first            customer first name
+     * @param  last             customer last name
+     * @param  email            customer email
+     * @param  phone            customer phone
+     * @param  state            customer state
+     * @param  xStoreId         xStoreId
+     * @param  xStoreCustomerId xStoreCustomerId
+     * @return                  return  List of contacts that satisfy the filtering criteria
+     */
+    	//wrapper class
+    	global class ContactResponse {
+        webservice Integer statusCode;
+        webservice String statusMessage;
+        webservice List<Contact> contacts;
+        
+        public ContactResponse(Integer statusCode, String statusMessage, List<Contact> contacts) {
+            this.statusCode 	= statusCode;
+            this.statusMessage	= statusMessage;
+            this.contacts 		= contacts;
+        }
+    }
+    
+    webService static ContactResponse customerSearch(
+        String first,
+        String last,
+        String email,
+        String phone,
+        String state,
+        String xStoreId,
+        String xStoreCustomerId
+    ) {
+        ContactResponse response;
+        String confName = 'customerSearch';
+        if(first == null || first == ''){            
+            return new ContactResponse(400, 'Atleast first name should be provided', new List<Contact>());
+        }
+        String orderBy = '';
+        String lastNamePart = '';
+        String xStoreAssociation = '';
+        String filterFirstName = '%' + first + '%';
+        if(last!='')
+        {
+            String filterLastName = '%' + last + '%';
+            lastNamePart = ' or lastname like: filterLastName';
+        }
+
+        String xStoreQuery;
+
+        if (xStoreId != '' || xStoreCustomerId != '') {
+            xStoreQuery =
+                (xStoreId != '' ? 'XStore_Id__c = \'' + xStoreId + '\'' : '') +
+                (xStoreId != '' && xStoreCustomerId != '' ? ' and ' : '') +
+                (xStoreCustomerId != '' ? ' XStore_Cust_Id__c =\'' + xStoreCustomerId + '\'' : '');
+            xStoreAssociation =
+                ',(select Id, XStore_Id__c, XStore_Cust_Id__c from XStore_Associations__r where ' +
+                xStoreQuery +
+                ')';
+        } else {
+            xStoreAssociation = ',(select Id, XStore_Id__c, XStore_Cust_Id__c from XStore_Associations__r )';
+        }
+
+        String fieldSelection = (apiConfig.get(confName).Selection_Criteria__c != '')
+            ? ',' + apiConfig.get(confName).Selection_Criteria__c.trim()
+            : '';
+
+        String sqlQuery =
+            'select Id, Name, FirstName, LastName, MiddleName, Phone, MobilePhone, Email, Helzberg_Id__c, Signup_Date__c, MailingStreet, MailingCity, MailingCountry, MailingState, MailingPostalCode, Custom_Design_Show_5year_Count__c, Appraisal_5year_Count__c, Customer_Groups__c, Active__c, Wed_Anniv_YYYY__c, Bridal_Interest__c, Repair_5year_Count__c, Sales_5year_Total__c, Customer_Ownership__c, Sales_5year_Count__c, Sig_Other_Birth_MMDD__c, Private_Label_Cardholder__c, Repair_5year_Total__c, Latest_Tran_Date__c, Custom_Design_Show_5year_Total__c' +
+            fieldSelection +
+            xStoreAssociation +
+            ' from Contact where RecordType.Name IN (\'Customer\') and (firstname like : filterFirstName'+lastNamePart+')';
+
+        // preparing phone part
+        String phonePart = (phone != '') ? ' and phone =: phone' : '';
+        // preparing email part
+        String emailPart = (email != '') ? ' and email =: email' : '';
+        // preparing State part
+        String statePart = (state != '') ? ' and MailingState =: state' : '';
+
+        // order by clause
+        if (apiConfig.get(confName).Sort_Field__c != '' && apiConfig.get(confName).Sort_Field__c != null) {
+            String orderDirection = (apiConfig.get(confName).Sort_Order__c == 'Ascending') ? 'asc' : 'desc';
+            orderBy = ' order by ' + apiConfig.get(confName).Sort_Field__c + ' ' + orderDirection;
+        }
+
+        // limit records
+        String limitPart = ' limit ' + apiConfig.get(confName).Record_Limit__c;
+        
+        // joining all query together
+        sqlQuery = sqlQuery + emailPart + phonePart + statePart + orderBy + limitPart;
+        
+        List<Contact> listContacts = Database.query(sqlQuery);
+        List<Contact> xStoreList = new List<Contact>();
+
+        if (xStoreId != '' || xStoreCustomerId != '') {
+            for (Contact con : listContacts) {
+                if (con.XStore_Associations__r.size() > 0) {
+                    xStoreList.add(con);
+                }
+            }
+        }
+                    
+
+        return xStoreList.size() >= 1 ? new ContactResponse(200, 'Data found', xStoreList) : new ContactResponse(200, 'Data found', listContacts);
+    }
+}

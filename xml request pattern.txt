@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                 xmlns="http://soap.sforce.com/schemas/class/SVC_CustomerSoap">
+<soapenv:Header>
+    <SessionHeader>
+        <sessionId>00D7d0000077p9x!AQ8AQO3jkaXou9gW3c83lABXhcXSuBYyZ8QODlNVHcY4nxPar1r3fp.H5jKr84lNaf07W05.VZAxFUl1hG9DFVe79XSB0.ZL</sessionId>
+    </SessionHeader>
+</soapenv:Header>
+  <soapenv:Body>
+    <customerSearch>
+        <first></first>
+        <last></last>
+        <email></email>
+        <phone></phone>
+        <state></state>
+        <xStoreId></xStoreId>
+        <xStoreCustomerId></xStoreCustomerId>
+    </customerSearch>
+  </soapenv:Body>
+</soapenv:Envelope>
