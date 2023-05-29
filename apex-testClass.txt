@@ -1,0 +1,19 @@
+@isTest
+private class SVC_CustomerSoapTest {
+    // Test method to verify the customerSearch method
+    @isTest
+    static void testCustomerSearch() {
+        // Create test data
+        Contact testContact = new Contact(FirstName = 'John', LastName = 'Doe');
+        insert testContact;
+
+        // Call the customerSearch method
+        List<Contact> result = SVC_CustomerSoap.customerSearch('John', 'Doe', '', '', '', '123', '');
+        List<Contact> result1 = SVC_CustomerSoap.customerSearch('John', 'Doe', '', '', '', '', '');
+
+        // Perform assertions to validate the result
+        System.assertEquals(1, result.size());
+        System.assertEquals('John', result[0].FirstName, 'First Name should be John.');
+        System.assertEquals('Doe', result[0].LastName, 'Last Name should be Doe.');
+    }
+}
